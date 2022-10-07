@@ -5,29 +5,31 @@ import java.util.List;
 import java.util.Random;
 
 public class BankCard {
-    private static List<String> storageOfUsedCardNumbers = new ArrayList<>();
-    private String iban = "400000";
-    private String checkSum = "9";
-    private String accountIdentifier;
-
-    public long getBalance() {
-        return balance;
-    }
-
+    private static final List<String> storageOfUsedCardNumbers = new ArrayList<>();
     private long balance;
     private final String pinCode;
     private final String bankCardNumber;
+
+    public void setBalance(long balance) {
+        this.balance = balance;
+    }
 
     public BankCard() {
         this.pinCode = generatePin();
         String bankCard;
         do {
-            this.accountIdentifier = createAccountIdentifier();
-            bankCard = iban + accountIdentifier + checkSum;
+            String accountIdentifier = createAccountIdentifier();
+            String binNumber = "400000";
+            String checkSum = generateCheckSum(binNumber + accountIdentifier);
+            bankCard = binNumber + accountIdentifier + checkSum;
         } while (storageOfUsedCardNumbers.contains(bankCard));
         storageOfUsedCardNumbers.add(bankCard);
-        this.balance = 0;
+        setBalance(0);
         this.bankCardNumber = bankCard;
+    }
+
+    public long getBalance() {
+        return balance;
     }
 
     private String createAccountIdentifier() {
@@ -55,6 +57,23 @@ public class BankCard {
 
     public String getPinCode() {
         return pinCode;
+    }
+
+    private static String generateCheckSum(String currentCardNumber) {
+        char[] cardNumberInChar = currentCardNumber.toCharArray();
+        int sumDigits = 0;
+        for (int i = 0; i < cardNumberInChar.length; i++) {
+            int currentNumber = Character.getNumericValue(cardNumberInChar[i]);
+            int newNumber = (i + 1) % 2 != 0 ? currentNumber * 2 : currentNumber;
+            sumDigits += newNumber > 9 ? newNumber - 9 : newNumber;
+        }
+        return String.valueOf(sumDigits % 10 == 0 ? 0 : 10 - sumDigits % 10);
+    }
+
+    public static boolean isValidCardNumber(String bankCardNumber) {
+        String currentCheckSum = bankCardNumber.substring(bankCardNumber.length() - 1);
+        String correctCheckSum = generateCheckSum(bankCardNumber.substring(0, bankCardNumber.length() - 1));
+        return currentCheckSum.equals(correctCheckSum);
     }
 }
 

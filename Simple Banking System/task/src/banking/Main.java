@@ -7,7 +7,7 @@ import java.util.Scanner;
 public class Main {
     private static boolean isRunning = true;
     private static boolean isRunningSecondMenu = true;
-    private static List<BankCard> storageBankCards = new ArrayList<>();
+    private static final List<BankCard> storageBankCards = new ArrayList<>();
 
     public static void main(String[] args) {
         Scanner scanner = new Scanner(System.in);
@@ -15,7 +15,7 @@ public class Main {
             showMainMenuDescription();
             String currentAction = scanner.next();
             switch (currentAction) {
-                case "1": {
+                case "1" -> {
                     BankCard bankCard = new BankCard();
                     storageBankCards.add(bankCard);
                     System.out.println("Your card has been created");
@@ -23,15 +23,18 @@ public class Main {
                     System.out.println(bankCard.getBankCardNumber());
                     System.out.println("Your card PIN:");
                     System.out.println(bankCard.getPinCode());
-                    break;
                 }
-                case "2": {
+                case "2" -> {
                     System.out.println("Enter your card number:");
                     String currentBankCardNumber = scanner.next();
                     System.out.println("Enter your PIN:");
                     String currentBankCardPinCode = scanner.next();
+                    if (!BankCard.isValidCardNumber(currentBankCardNumber)) {
+                        System.out.println("Wrong card number or PIN!");
+                        break;
+                    }
                     BankCard currentBankCard = searchBankCard(currentBankCardNumber, currentBankCardPinCode);
-                    boolean isCorrectBankCard = currentBankCard == null ? false : true;
+                    boolean isCorrectBankCard = currentBankCard != null;
                     if (isCorrectBankCard) {
                         System.out.println("You have successfully logged in!");
 
@@ -40,13 +43,10 @@ public class Main {
                             runAccountMenu(currentBankCard);
                         }
                     }
-                    break;
-
                 }
-                case "0": {
+                case "0" -> {
                     System.out.println("Bye!");
                     isRunning = false;
-                    break;
                 }
             }
         }
@@ -65,20 +65,15 @@ public class Main {
         Scanner scanner = new Scanner(System.in);
         String currentAction = scanner.next();
         switch (currentAction) {
-            case "1": {
-                System.out.printf("Balance: %d%n", currentBankCard.getBalance());
-                break;
-            }
-            case "2": {
+            case "1" -> System.out.printf("Balance: %d%n", currentBankCard.getBalance());
+            case "2" -> {
                 System.out.println("You have successfully logged out!");
                 isRunningSecondMenu = false;
-                break;
             }
-            case "0": {
+            case "0" -> {
                 isRunningSecondMenu = false;
                 isRunning = false;
                 System.out.println("Bye!");
-                break;
             }
         }
     }
