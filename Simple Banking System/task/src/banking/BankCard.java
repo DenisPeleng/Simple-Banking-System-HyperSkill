@@ -1,34 +1,68 @@
 package banking;
 
-import java.util.ArrayList;
-import java.util.List;
+import org.sqlite.SQLiteDataSource;
+
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.Random;
 
 public class BankCard {
-    private static final List<String> storageOfUsedCardNumbers = new ArrayList<>();
-    private long balance;
-    private final String pinCode;
-    private final String bankCardNumber;
+    private String pinCode;
+    private int balance;
+    private String bankCardNumber;
 
-    public void setBalance(long balance) {
-        this.balance = balance;
+    public static void setDatabase(Database database) {
+        BankCard.database = database;
     }
+
+    private static Database database;
+
 
     public BankCard() {
-        this.pinCode = generatePin();
         String bankCard;
-        do {
-            String accountIdentifier = createAccountIdentifier();
-            String binNumber = "400000";
-            String checkSum = generateCheckSum(binNumber + accountIdentifier);
-            bankCard = binNumber + accountIdentifier + checkSum;
-        } while (storageOfUsedCardNumbers.contains(bankCard));
-        storageOfUsedCardNumbers.add(bankCard);
-        setBalance(0);
+        String accountIdentifier = createAccountIdentifier();
+        String binNumber = "400000";
+        String checkSum = generateCheckSum(binNumber + accountIdentifier);
+        bankCard = binNumber + accountIdentifier + checkSum;
         this.bankCardNumber = bankCard;
+        this.pinCode = generatePin();
+        this.balance = 0;
+        addNewCardToDB(bankCardNumber, pinCode);
     }
 
-    public long getBalance() {
+    public BankCard(String bankCardNumber, String pinCode) {
+        String sqlQuery = String.format("""
+                SELECT balance FROM card
+                WHERE number='%s' AND pin='%s';
+                """, bankCardNumber, pinCode);
+        SQLiteDataSource dataSource = new SQLiteDataSource();
+        dataSource.setUrl(database.getDataBaseurl());
+        try (Connection con = dataSource.getConnection()) {
+            Statement statementSql = con.createStatement();
+            try (ResultSet resultSet = statementSql.executeQuery(sqlQuery)) {
+                while (resultSet.next()) {
+                    this.balance = resultSet.getInt("balance");
+                    this.bankCardNumber = bankCardNumber;
+                    this.pinCode = pinCode;
+                }
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private void addNewCardToDB(String bankCardNumber, String pinCode) {
+        String sqlQuery = String.format("""
+                INSERT INTO card (number, pin)
+                VALUES ('%s', '%s')
+                ;""", bankCardNumber, pinCode);
+        database.executeSql(sqlQuery);
+    }
+
+
+    public int getBalance() {
         return balance;
     }
 
@@ -75,6 +109,29 @@ public class BankCard {
         String correctCheckSum = generateCheckSum(bankCardNumber.substring(0, bankCardNumber.length() - 1));
         return currentCheckSum.equals(correctCheckSum);
     }
+
+    public static boolean isCreditCardNumberExist(String bankCardNumber, String pinCode) {
+        String sqlQuery = String.format("""
+                SELECT * FROM card
+                WHERE number='%s' AND pin='%s';
+                """, bankCardNumber, pinCode);
+        SQLiteDataSource dataSource = new SQLiteDataSource();
+        dataSource.setUrl(database.getDataBaseurl());
+        String answerFromBD = "";
+        try (Connection con = dataSource.getConnection()) {
+            Statement statementSql = con.createStatement();
+            try (ResultSet resultSet = statementSql.executeQuery(sqlQuery)) {
+                while (resultSet.next()) {
+                    answerFromBD = resultSet.getString("number");
+                }
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+        return answerFromBD.contains(bankCardNumber);
+    }
+
+
 }
 
 
